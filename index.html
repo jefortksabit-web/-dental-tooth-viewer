@@ -1,0 +1,155 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>Dental Medicine HEIs — Interactive 3D Tooth</title>
+<script type="module" src="https://ajax.googleapis.com/ajax/libs/model-viewer/4.1.0/model-viewer.min.js"></script>
+<style>
+  :root {
+    --navy:#083d63; --teal:#15aab1; --blue:#137fd0;
+    --glass:rgba(255,255,255,.76); --line:rgba(8,61,99,.10);
+  }
+  *{box-sizing:border-box}
+  html,body{margin:0;width:100%;height:100%;overflow:hidden;background:
+    radial-gradient(circle at 50% 5%,#fff 0,#edf6fa 42%,#d5e6ed 100%);
+    font-family:Inter,Arial,Helvetica,sans-serif;color:var(--navy);}
+  .app{position:fixed;inset:0;display:flex;flex-direction:column;
+    padding:max(10px,env(safe-area-inset-top)) max(10px,env(safe-area-inset-right))
+            max(10px,env(safe-area-inset-bottom)) max(10px,env(safe-area-inset-left));}
+  header{position:relative;z-index:5;text-align:center;padding:8px 54px 5px;pointer-events:none}
+  h1{font-size:clamp(18px,2.4vw,32px);margin:0;font-weight:900;letter-spacing:-.02em}
+  header p{margin:4px 0 0;font-size:clamp(10px,1.2vw,14px);color:#688496;font-weight:650}
+  .viewer-wrap{position:relative;flex:1;min-height:0}
+  model-viewer{width:100%;height:100%;background:transparent;touch-action:none;
+    --poster-color:transparent;outline:none;}
+  .hint{position:absolute;z-index:6;left:50%;bottom:72px;transform:translateX(-50%);
+    padding:8px 13px;border-radius:999px;background:rgba(8,61,99,.78);color:white;
+    font-size:11px;font-weight:800;pointer-events:none;white-space:nowrap;
+    box-shadow:0 8px 24px rgba(8,50,75,.15)}
+  .controls{position:absolute;z-index:7;left:50%;bottom:12px;transform:translateX(-50%);
+    display:flex;gap:7px;max-width:calc(100% - 18px);overflow:auto;padding:7px;
+    border:1px solid rgba(255,255,255,.9);background:var(--glass);
+    backdrop-filter:blur(16px);-webkit-backdrop-filter:blur(16px);
+    border-radius:999px;box-shadow:0 12px 32px rgba(7,48,73,.14);}
+  .controls::-webkit-scrollbar{display:none}
+  .controls button{border:0;border-radius:999px;background:transparent;color:#537387;
+    padding:10px 14px;min-height:44px;font-size:10px;font-weight:900;white-space:nowrap;cursor:pointer}
+  .controls button.active{background:linear-gradient(135deg,var(--blue),var(--teal));color:white}
+  .side-title{position:absolute;z-index:5;top:8px;left:12px;padding:8px 11px;border-radius:14px;
+    background:rgba(255,255,255,.72);backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px);
+    border:1px solid rgba(255,255,255,.9);font-size:10px;font-weight:900;pointer-events:none}
+  .loading{position:absolute;inset:0;display:grid;place-items:center;z-index:9;background:#edf6fa;
+    transition:opacity .35s ease;pointer-events:none}
+  .loading.done{opacity:0}
+  .loading-card{background:white;border-radius:22px;padding:18px 22px;box-shadow:0 16px 40px rgba(8,50,75,.14);
+    text-align:center;font-size:12px;font-weight:800}
+  @media(max-width:700px){
+    header{padding-left:8px;padding-right:8px}
+    .hint{bottom:68px}
+    .side-title{top:2px}
+  }
+</style>
+</head>
+<body>
+<div class="app">
+  <header>
+    <h1>Dental Medicine HEIs in the Philippines</h1>
+    <p>ONE interactive 3D tooth · swipe left/right to rotate · pinch to zoom</p>
+  </header>
+
+  <div class="viewer-wrap">
+    <div id="loading" class="loading"><div class="loading-card">Loading the interactive 3D tooth…</div></div>
+    <div id="sideTitle" class="side-title">FRONT · PHILIPPINES DISTRIBUTION</div>
+
+    <model-viewer id="tooth"
+      alt="One interactive 3D tooth infographic for Dental Medicine HEIs in the Philippines"
+      camera-controls
+      interaction-prompt="none"
+      shadow-intensity="1.25"
+      shadow-softness="0.85"
+      exposure="1.18"
+      environment-image="neutral"
+      camera-orbit="0deg 75deg 6m"
+      min-camera-orbit="-Infinity 75deg 3.1m"
+      max-camera-orbit="Infinity 75deg 8m"
+      min-field-of-view="22deg"
+      max-field-of-view="42deg">
+    </model-viewer>
+
+    <div class="hint">← Swipe left / right on the tooth · pinch to zoom →</div>
+
+    <nav class="controls">
+      <button class="active" data-deg="0" data-label="FRONT · PHILIPPINES DISTRIBUTION">Front · Map</button>
+      <button data-deg="90" data-label="RIGHT · ACADEMIC STRUCTURE & INSIGHTS">Right · Structure</button>
+      <button data-deg="180" data-label="BACK · COMPLETE REGIONAL ROSTER">Back · Roster</button>
+      <button data-deg="-90" data-label="LEFT · NATIONAL SNAPSHOT">Left · Snapshot</button>
+    </nav>
+  </div>
+</div>
+
+<script>
+const objectURL = "tooth_dashboard.glb";
+
+const viewer = document.getElementById("tooth");
+const loading = document.getElementById("loading");
+const sideTitle = document.getElementById("sideTitle");
+const buttons = [...document.querySelectorAll("[data-deg]")];
+
+viewer.src = objectURL;
+
+function normalizeDeg(d) {
+  let n = ((d % 360) + 360) % 360;
+  if (n > 180) n -= 360;
+  return n;
+}
+
+function nearestSide(deg) {
+  const candidates=[0,90,180,-90];
+  let best=candidates[0], delta=Infinity;
+  for(const c of candidates){
+    let diff=Math.abs(normalizeDeg(deg-c));
+    if(diff<delta){delta=diff;best=c;}
+  }
+  return best;
+}
+
+function setActive(deg) {
+  const side=nearestSide(deg);
+  buttons.forEach(b=>b.classList.toggle("active",Number(b.dataset.deg)===side));
+  const btn=buttons.find(b=>Number(b.dataset.deg)===side);
+  if(btn) sideTitle.textContent=btn.dataset.label;
+}
+
+function goTo(deg) {
+  const orbit=viewer.getCameraOrbit();
+  const radius=Math.max(orbit.radius || 6, 3.1);
+  viewer.cameraOrbit=`${deg}deg 75deg ${radius}m`;
+  setActive(deg);
+}
+
+buttons.forEach(btn=>btn.addEventListener("click",()=>goTo(Number(btn.dataset.deg))));
+
+viewer.addEventListener("load",()=>{
+  loading.classList.add("done");
+  setTimeout(()=>loading.remove(),450);
+});
+
+let snappingTimer;
+viewer.addEventListener("camera-change",()=>{
+  clearTimeout(snappingTimer);
+  const orbit=viewer.getCameraOrbit();
+  const deg=orbit.theta*180/Math.PI;
+  setActive(deg);
+  snappingTimer=setTimeout(()=>{
+    if(!viewer.matches(":active")) {
+      const o=viewer.getCameraOrbit();
+      const d=nearestSide(o.theta*180/Math.PI);
+      viewer.cameraOrbit=`${d}deg 75deg ${o.radius}m`;
+      setActive(d);
+    }
+  },280);
+});
+</script>
+</body>
+</html>
